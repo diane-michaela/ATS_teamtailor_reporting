@@ -1,3 +1,6 @@
+# IDEAL FOR SEVERAL JOBS
+#
+#
 # =============================================================================
 # MAKE MODULE 1 — Config (paste into a standalone Code module, no inputs)
 # Returns the list of jobs to process. The Iterator feeds each item to Module 2.
@@ -5,11 +8,11 @@
 # =============================================================================
 #
 # return [
-#   {"job_id": "YOUR JOB ID", "channel": "#test-hiring"},
-#   {"job_id": "YOUR JOB ID", "channel": "#test-hiring"},
-#   {"job_id": "YOUR JOB ID", "channel": "#test-hiring"},
-#   {"job_id": "YOUR JOB ID", "channel": "#test-hiring"},
-#   {"job_id": "YOUR JOB ID", "channel": "#test-hiring"},
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"}, >> you will find the 7 digits in your job URL
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"}, 
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
 # ]
 
 # =============================================================================
@@ -21,7 +24,8 @@ import json
 import urllib.request
 from datetime import date, datetime
 
-API_TOKEN = "YOUR TOKEN ON TEAMTAILOR"
+API_TOKEN = "YOUR TOKEN ON TEAMTAILOR" 
+# >> CONNECT TO YOUR API INTEGRATION, CREATE AN ADMIN KEY READ
 BASE_URL = f"https://api.teamtailor.com/v1/job-applications?include=candidate,stage&filter[job]={job_id}&page[size]=30"
 
 STAGE_ORDER = [
