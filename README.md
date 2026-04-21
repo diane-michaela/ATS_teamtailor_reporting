@@ -1,4 +1,4 @@
-# DISCLAIMER — Privacy & Customization 
+DISCLAIMER — Privacy & Customization 
  =============================================================================
  
  To preserve privacy, the pipeline stages used in this script ("TA Screening",# "HM Interview", "Testing Stage", "Final Interview", "Offer", "Hired") 
@@ -10,6 +10,7 @@
  - The funnel and alert sections (display labels)
 
 =============================================================================
+
 
 # Teamtailor Hiring Report — Make Automation
 
