@@ -2,7 +2,19 @@
 
 Automated weekly hiring pipeline reports pulled from the Teamtailor ATS and posted to Slack, powered by Make (formerly Integromat).
 
+# =============================================================================
+
+
+## Purpose
+
+For each active job opening, this automation:
+- Fetches all applications and their pipeline stage from the Teamtailor API
+- Calculates pipeline health metrics (conversion rates, sourced vs inbound, days open)
+- Detects anomalies and fires alerts (backlog, low quality, high fail rate, offer drop-off)
+- Posts a formatted weekly report to the relevant Slack channel
+
 ---
+
 # DISCLAIMER — Privacy & Customization
 # =============================================================================
 # To preserve privacy, the pipeline stages used in this script ("TA Screening",
@@ -21,17 +33,6 @@ Automated weekly hiring pipeline reports pulled from the Teamtailor ATS and post
 #   - INTERVIEW_STAGES (stages you want to highlight with candidate names)
 #   - The funnel and alert sections (display labels)
 # =============================================================================
-
-
-## Purpose
-
-For each active job opening, this automation:
-- Fetches all applications and their pipeline stage from the Teamtailor API
-- Calculates pipeline health metrics (conversion rates, sourced vs inbound, days open)
-- Detects anomalies and fires alerts (backlog, low quality, high fail rate, offer drop-off)
-- Posts a formatted weekly report to the relevant Slack channel
-
----
 
 ## Make Architecture
 
