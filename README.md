@@ -7,6 +7,7 @@
  - STAGE_ORDER (the master list)
  - INTERVIEW_STAGES (stages you want to highlight with candidate names)
  - The funnel and alert sections (display labels)
+
 =============================================================================
 
 Teamtailor Hiring Report — Make Automation
