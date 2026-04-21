@@ -1,5 +1,24 @@
 # IDEAL FOR SEVERAL JOBS
 #
+# =============================================================================
+# DISCLAIMER — Privacy & Customization
+# =============================================================================
+# To preserve privacy, the pipeline stages used in this script ("TA Screening",
+# "HM Interview", "Testing Stage", "Final Interview", "Offer", "Hired") reflect
+# a CLASSIC, GENERIC hiring process. They do NOT match the exact stages or
+# naming conventions used at the author's current company.
+#
+# Before using this script in your own setup, you MUST replace these stage
+# names with the EXACT names of the stages you have created in your own
+# TeamTailor (or other ATS) pipeline. Stage names are matched as plain strings,
+# so any mismatch (typos, extra spaces, different casing) will silently result
+# in a count of 0 for that stage.
+#
+# Places to update if your stage names differ:
+#   - STAGE_ORDER (the master list)
+#   - INTERVIEW_STAGES (stages you want to highlight with candidate names)
+#   - The funnel and alert sections (display labels)
+# =============================================================================
 #
 # =============================================================================
 # MAKE MODULE 1 — Config (paste into a standalone Code module, no inputs)
@@ -8,13 +27,13 @@
 # =============================================================================
 #
 # return [
-#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"}, >> you will find the 7 digits in your job URL
-#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"}, 
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"}, # >> 7 digits in your job URL
+#   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
 #   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
 #   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
 #   {"job_id": "YOUR JOB ID", "channel": "#YOUR SLACK CHANNEL"},
 # ]
-
+#
 # =============================================================================
 # MAKE MODULE 2 — Report (paste below into a Code module)
 # Input variables to declare in Make: job_id, channel (mapped from Iterator)
@@ -24,21 +43,22 @@ import json
 import urllib.request
 from datetime import date, datetime
 
-API_TOKEN = "YOUR TOKEN ON TEAMTAILOR" 
-# >> CONNECT TO YOUR API INTEGRATION, CREATE AN ADMIN KEY READ
+API_TOKEN = "YOUR TOKEN ON TEAMTAILOR"
+# >> CONNECT TO YOUR API INTEGRATION, CREATE AN ADMIN KEY (READ)
+
 BASE_URL = f"https://api.teamtailor.com/v1/job-applications?include=candidate,stage&filter[job]={job_id}&page[size]=30"
 
 STAGE_ORDER = [
     "Inbox",
     "Reviewing",
     "TA Screening",
-    "Job-fit interview",
-    "Use-case Interview",
-    "Cultural-fit interview",
+    "HM Interview",
+    "Testing Stage",
+    "Final Interview",
     "Offer",
     "Hired",
 ]
-INTERVIEW_STAGES = ["Job-fit interview", "Use-case Interview", "Cultural-fit interview"]
+INTERVIEW_STAGES = ["HM Interview", "Testing Stage", "Final Interview"]
 
 HEADERS = {
     "Authorization": f"Token token={API_TOKEN}",
@@ -46,14 +66,12 @@ HEADERS = {
     "Accept": "application/vnd.api+json",
 }
 
-
 def make_request(url):
     req = urllib.request.Request(url)
     for key, value in HEADERS.items():
         req.add_header(key, value)
     with urllib.request.urlopen(req) as response:
         return json.loads(response.read().decode())
-
 
 # Fetch job title and creation date (used for accurate days-open count)
 job_data = make_request(f"https://api.teamtailor.com/v1/jobs/{job_id}")
@@ -63,7 +81,6 @@ job_created_at = job_data["data"]["attributes"].get("created-at", "")
 # Fetch all paginated applications + deduplicate included items
 all_applications, all_included, seen = [], [], set()
 current_url = BASE_URL
-
 while current_url:
     page = make_request(current_url)
     all_applications.extend(page["data"])
@@ -140,20 +157,16 @@ days_indicator = (
     else "🔴"
 )
 
-
 def rs(s):
     idx = STAGE_ORDER.index(s)
     return sum(active[STAGE_ORDER[i]] + rejected[STAGE_ORDER[i]] for i in range(idx, len(STAGE_ORDER)))
 
-
 def conv(num, denom):
     return round((num / denom) * 100) if denom > 0 else 0
-
 
 def conv_decided(passed_to_next, rejected_at_stage):
     total = passed_to_next + rejected_at_stage
     return round((passed_to_next / total) * 100) if total > 0 else 0
-
 
 def bar(pct):
     if not pct:
@@ -161,15 +174,14 @@ def bar(pct):
     filled = round(pct / 10)
     return "█" * filled + "░" * (10 - filled)
 
-
 pct_sourced = conv(total_sourced, total_all)
 pct_inbound = conv(total_inbound, total_all)
-pct_screening_to_jobfit = conv_decided(rs("Job-fit interview"), rejected["TA Screening"])
-pct_jobfit_to_usecase = conv_decided(rs("Use-case Interview"), rejected["Job-fit interview"])
-pct_usecase_to_culturafit = conv_decided(rs("Cultural-fit interview"), rejected["Use-case Interview"])
-pct_culturafit_to_offer = conv_decided(rs("Offer"), rejected["Cultural-fit interview"])
+pct_screening_to_hm = conv_decided(rs("HM Interview"), rejected["TA Screening"])
+pct_hm_to_testing = conv_decided(rs("Testing Stage"), rejected["HM Interview"])
+pct_testing_to_final = conv_decided(rs("Final Interview"), rejected["Testing Stage"])
+pct_final_to_offer = conv_decided(rs("Offer"), rejected["Final Interview"])
 pct_offer_to_hired = conv_decided(rs("Hired"), rejected["Offer"])
-usecase_fail_rate = conv_decided(rejected["Use-case Interview"], rs("Cultural-fit interview"))
+testing_fail_rate = conv_decided(rejected["Testing Stage"], rs("Final Interview"))
 
 # Alerts
 alerts = []
@@ -182,12 +194,12 @@ if in_review_active > 20:
         f'⚠️ {in_review_active} candidates pending review '
         f'(Inbox: {active["Inbox"]}, Reviewing: {active["Reviewing"]})'
     )
-if pct_screening_to_jobfit < 20 and rs("TA Screening") > 0:
-    alerts.append(f"⚠️ Low pipeline quality: only {pct_screening_to_jobfit}% pass TA Screening")
-if usecase_fail_rate > 60 and rs("Use-case Interview") > 0:
+if pct_screening_to_hm < 20 and rs("TA Screening") > 0:
+    alerts.append(f"⚠️ Low pipeline quality: only {pct_screening_to_hm}% pass TA Screening")
+if testing_fail_rate > 60 and rs("Testing Stage") > 0:
     alerts.append(
-        f'⚠️ High Use-case fail rate: {usecase_fail_rate}% '
-        f'({rejected["Use-case Interview"]} failed)'
+        f'⚠️ High Testing Stage fail rate: {testing_fail_rate}% '
+        f'({rejected["Testing Stage"]} failed)'
     )
 if rs("Offer") > 0 and pct_offer_to_hired < 80:
     alerts.append(f"⚠️ Offer acceptance below 80%: {pct_offer_to_hired}%")
@@ -201,17 +213,20 @@ interview_section = "\n".join(interview_lines) if interview_lines else "  • No
 
 # Funnel section
 funnel_lines = [
-    f"- TA Screening → Job-fit: {pct_screening_to_jobfit}% {bar(pct_screening_to_jobfit)}",
-    f"- Job-fit → Use-case: {pct_jobfit_to_usecase}% {bar(pct_jobfit_to_usecase)}",
-    f"- Use-case → Cultural-fit: {pct_usecase_to_culturafit}% {bar(pct_usecase_to_culturafit)}",
+    f"- TA Screening → HM Interview: {pct_screening_to_hm}% {bar(pct_screening_to_hm)}",
+    f"- HM Interview → Testing Stage: {pct_hm_to_testing}% {bar(pct_hm_to_testing)}",
+    f"- Testing Stage → Final Interview: {pct_testing_to_final}% {bar(pct_testing_to_final)}",
 ]
-if rs("Cultural-fit interview") > 0:
-    funnel_lines.append(f"- Cultural-fit → Offer: {pct_culturafit_to_offer}% {bar(pct_culturafit_to_offer)}")
+if rs("Final Interview") > 0:
+    funnel_lines.append(f"- Final Interview → Offer: {pct_final_to_offer}% {bar(pct_final_to_offer)}")
 if rs("Offer") > 0:
     funnel_lines.append(f"- Offer → Hired: {pct_offer_to_hired}% {bar(pct_offer_to_hired)}")
 
 today_str = today.strftime("%B %d, %Y")
 days_display = days_open if days_open is not None else "N/A"
+
+funnel_block = "\n".join(funnel_lines)
+alerts_block = "\n".join(alerts) if alerts else "✅ No alerts"
 
 slack_message = f"""📊 *Weekly Hiring Report — {JOB_TITLE}*
 📅 {today_str}  |  {days_indicator} Open since: {days_display} days
@@ -223,9 +238,9 @@ slack_message = f"""📊 *Weekly Hiring Report — {JOB_TITLE}*
 *📍 Pipeline Snapshot*
 - 📬 Inbox & Review: *{in_review_active} active* — {in_review_total} total since opening
 - TA Screening: *{active['TA Screening']} active* — {rs('TA Screening')} total since opening
-- Job-fit interview: *{active['Job-fit interview']} active* — {rs('Job-fit interview')} total since opening
-- Use-case Interview: *{active['Use-case Interview']} active* — {rs('Use-case Interview')} total since opening
-- Cultural-fit interview: *{active['Cultural-fit interview']} active* — {rs('Cultural-fit interview')} total since opening
+- HM Interview: *{active['HM Interview']} active* — {rs('HM Interview')} total since opening
+- Testing Stage: *{active['Testing Stage']} active* — {rs('Testing Stage')} total since opening
+- Final Interview: *{active['Final Interview']} active* — {rs('Final Interview')} total since opening
 - Offer: *{active['Offer']} active* — {rs('Offer')} total since opening
 - Hired: *{active['Hired']}* 🎉
 
@@ -233,10 +248,10 @@ slack_message = f"""📊 *Weekly Hiring Report — {JOB_TITLE}*
 {interview_section}
 
 *📈 Conversion Funnel (HM stages)*
-{'\n'.join(funnel_lines)}
+{funnel_block}
 
 *🚨 Alerts*
-{chr(10).join(alerts) if alerts else '✅ No alerts'}"""
+{alerts_block}"""
 
 return {
     "slack_message": slack_message,
