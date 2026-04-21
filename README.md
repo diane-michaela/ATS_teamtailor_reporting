@@ -10,9 +10,9 @@
 
 =============================================================================
 
-Teamtailor Hiring Report — Make Automation
+# Teamtailor Hiring Report — Make Automation
 
-# Automated weekly hiring pipeline reports pulled from the Teamtailor ATS and posted to Slack, powered by Make (formerly Integromat).
+Automated weekly hiring pipeline reports pulled from the Teamtailor ATS and posted to Slack, powered by Make.com
 
 =============================================================================
 
